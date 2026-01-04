@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -10,42 +10,42 @@ import (
 	"time"
 
 	"github.com/azhenissov/Advanced_Programming2/internal/server"
-	"github.com/azhenissov/Advanced_Programming2/internal/store"
 	"github.com/azhenissov/Advanced_Programming2/internal/worker"
-
 )
 
 func main() {
-	dataStore := store.NewStore[string, string]()
-	srv := server.NewServer(dataStore)
+	srv := server.New()
 
-	mux := http.NewServeMux()
-	srv.RegisterRoutes(mux)
+	w := worker.New(srv.GetRequestsPtr(), srv.GetKeyCount)
+	go w.Start()
 
 	httpServer := &http.Server{
 		Addr:    ":8080",
-		Handler: mux,
+		Handler: srv.Handler(),
 	}
 
-	stopWorker := make(chan struct{})
-	go worker.StartWorker(srv, stopWorker)
-
 	go func() {
-		log.Println("Starting server on :8080")
+		fmt.Println("Server starting on port 8080")
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Could not listen on :8080: %v\n", err)
+			fmt.Printf("Server error: %v\n", err)
+			os.Exit(1)
 		}
 	}()
 
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	<-sig
-	log.Println("Shutting down server...")
-	close(stopWorker)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	<-sigChan
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	fmt.Println("\nShutdown signal received")
+
+	w.Stop()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	httpServer.Shutdown(ctx)
-	log.Println("Server gracefully stopped")
+	if err := httpServer.Shutdown(ctx); err != nil {
+		fmt.Printf("Server shutdown error: %v\n", err)
+	}
+
+	fmt.Println("Server stopped gracefully")
 }

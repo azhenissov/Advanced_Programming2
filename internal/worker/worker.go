@@ -2,29 +2,41 @@ package worker
 
 import (
 	"fmt"
+	"sync/atomic"
 	"time"
 )
 
-type StatsProvider interface {
-	RequestCount() uint64
-	KeyCount() int
+type Worker struct {
+	stopChan    chan struct{}
+	requestsPtr *atomic.Int64
+	getKeyCount func() int
 }
 
-func StartWorker(sp StatsProvider, stop <-chan struct{}) {
+func New(requestsPtr *atomic.Int64, getKeyCount func() int) *Worker {
+	return &Worker{
+		stopChan:    make(chan struct{}),
+		requestsPtr: requestsPtr,
+		getKeyCount: getKeyCount,
+	}
+}
+
+func (w *Worker) Start() {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			fmt.Printf(
-				"[WORKER] requests=%d keys=%d\n",
-				sp.RequestCount(),
-				sp.KeyCount(),
-			)
-		case <-stop:
-			fmt.Println("[WORKER] stopped")
+			requests := w.requestsPtr.Load()
+			keys := w.getKeyCount()
+			fmt.Printf("Stats - Requests: %d, Keys: %d\n", requests, keys)
+		case <-w.stopChan:
+			fmt.Println("Worker stopped")
 			return
 		}
 	}
+}
+
+func (w *Worker) Stop() {
+	close(w.stopChan)
 }

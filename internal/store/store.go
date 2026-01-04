@@ -7,8 +7,10 @@ type Store[K comparable, V any] struct {
 	data map[K]V
 }
 
-func NewStore[K comparable, V any]() *Store[K, V] {
-	return &Store[K, V]{data: make(map[K]V)}
+func New[K comparable, V any]() *Store[K, V] {
+	return &Store[K, V]{
+		data: make(map[K]V),
+	}
 }
 
 func (s *Store[K, V]) Set(k K, v V) {
@@ -20,31 +22,31 @@ func (s *Store[K, V]) Set(k K, v V) {
 func (s *Store[K, V]) Get(k K) (V, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	val, ok := s.data[k]
-	return val, ok
+	v, ok := s.data[k]
+	return v, ok
 }
 
 func (s *Store[K, V]) Delete(k K) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if _, ok := s.data[k]; ok {
-		delete(s.data, k)
-		return true
+	if _, ok := s.data[k]; !ok {
+		return false
 	}
-	return false
+	delete(s.data, k)
+	return true
 }
 
 func (s *Store[K, V]) Snapshot() map[K]V {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	copy := make(map[K]V)
+	snapshot := make(map[K]V, len(s.data))
 	for k, v := range s.data {
-		copy[k] = v
+		snapshot[k] = v
 	}
-	return copy
+	return snapshot
 }
 
-func (s *Store[K, V]) Len() int {
+func (s *Store[K, V]) Count() int {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return len(s.data)
