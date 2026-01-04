@@ -1,4 +1,4 @@
-package internal
+package model
 
 type DataRequest struct {
 	Key string `json:"key"`

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"internal/model"
-	"internal/store"
+	"github.com/azhenissov/Advanced_Programming2/internal/model"
+	"github.com/azhenissov/Advanced_Programming2/internal/store"
 )
 
 type Server struct {

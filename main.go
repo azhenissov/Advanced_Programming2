@@ -9,9 +9,10 @@ import (
 	"syscall"
 	"time"
 
-	"internal/server"
-	"internal/store"
-	"internal/worker"
+	"github.com/azhenissov/Advanced_Programming2/internal/server"
+	"github.com/azhenissov/Advanced_Programming2/internal/store"
+	"github.com/azhenissov/Advanced_Programming2/internal/worker"
+
 )
 
 func main() {
