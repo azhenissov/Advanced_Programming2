@@ -51,3 +51,13 @@ func (s *Store[K, V]) Count() int {
 	defer s.mu.RUnlock()
 	return len(s.data)
 }
+
+func (s *Store[K, V]) Keys() []K {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	keys := make([]K, 0, len(s.data))
+	for k := range s.data {
+		keys = append(keys, k)
+	}
+	return keys
+}

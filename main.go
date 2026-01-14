@@ -39,6 +39,7 @@ func main() {
 	fmt.Println("\nShutdown signal received")
 
 	w.Stop()
+	srv.Stop()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
